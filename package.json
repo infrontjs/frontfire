@@ -1,0 +1,32 @@
+{
+  "name": "frontfire",
+  "version": "0.1.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/infrontjs/frontfire.git"
+  },
+  "keywords": [],
+  "author": "benny00100",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/infrontjs/frontfire/issues"
+  },
+  "homepage": "https://github.com/infrontjs/frontfire#readme",
+  "dependencies": {
+    "chalk": "^5.2.0",
+    "commander": "^10.0.0",
+    "conf": "^11.0.1",
+    "esbuild": "^0.17.4",
+    "esbuild-copy-static-files": "^0.1.0",
+    "esbuild-plugin-copy": "^2.0.2"
+  },
+  "bin": {
+    "frontfire": "src/index.js"
+  }
+}
