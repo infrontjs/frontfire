@@ -1,11 +1,17 @@
 #! /usr/bin/env node
 const { program } = require( 'commander' );
-
+const frontFire = require( "./FrontFire.js" );
 
 program
-    .command( 'testing' )
-    .description( 'For testing purpose only' )
-    .action( function() { console.log( "Hello from FrontFire" ) } );
+    .command( 'run-dev' )
+    .description( 'Running development server.' )
+    .action( function() {frontFire( true ); } );
+
+program
+    .command( 'build' )
+    .description( 'Building for production.' )
+    .action( function() {frontFire( false ); } );
+
 
 program.parse();
 
