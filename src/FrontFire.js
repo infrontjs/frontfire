@@ -2,10 +2,38 @@ const esbuild = require( "esbuild" );
 const { copy } = require( "esbuild-plugin-copy" );
 const copyStaticFiles = require( "esbuild-copy-static-files" );
 const http = require( "node:http" );
+const fs = require( 'node:fs' );
+const path = require( 'node:path' );
 
 const rootBuildDir = 'build';
 
-// @todo Add PATH_SEPERATOR for paths
+try
+{
+    if ( fs.statSync( rootBuildDir ) )
+    {
+        console.log( "Cleaning build directory: " + rootBuildDir );
+        fs.rmSync( rootBuildDir, { recursive: true, force: true } );
+    }
+}
+catch( ie )
+{
+    // Fail silently
+    console.error( ie );
+}
+
+const rootFiles = fs.readdirSync( `src${path.sep}`, { withFileTypes : true } );
+const rootFilesToCopy = [];
+for ( let ri = 0; ri < rootFiles.length; ri++ )
+{
+    if ( rootFiles[ ri ].isDirectory() )
+    {
+        continue;
+    }
+
+    // Note
+    // It seems that the copy plugin requires normal slashes no matter what OS we are on
+    rootFilesToCopy.push( `src/` + rootFiles[ ri ].name );
+}
 
 async function frontFire( isWatch )
 {
@@ -15,8 +43,8 @@ async function frontFire( isWatch )
         sourcemap: true,
         minify: isWatch ? false : true,
         logLevel: isWatch ? "info" : "error",
-        entryPoints : [ 'src/main.js', 'src/style.css' ],
-        outdir : isWatch ? `${rootBuildDir}/debug/bundles/` : `${rootBuildDir}/release/bundles`,
+        entryPoints : [ `src${path.sep}app${path.sep}main.js`, `src${path.sep}app${path.sep}app.css` ],
+        outdir : isWatch ? `${rootBuildDir}${path.sep}debug${path.sep}app${path.sep}` : `${rootBuildDir}${path.sep}release${path.sep}app${path.sep}`,
         loader: {
             ".html" : "text",
             ".png" : "file"
@@ -26,14 +54,14 @@ async function frontFire( isWatch )
                 resolveFrom : 'cwd',
                 assets: [
                     {
-                        from: [ 'src/index.html' ],
-                        to: [ isWatch ? `${rootBuildDir}/debug/` : `${rootBuildDir}/release/` ]
+                        from: rootFilesToCopy,
+                        to: [ isWatch ? `${rootBuildDir}${path.sep}debug` : `${rootBuildDir}${path.sep}release` ]
                     }
                 ]
             }),
             copyStaticFiles({
                 src: 'src/assets',
-                dest: isWatch ? `${rootBuildDir}/debug/assets` : `${rootBuildDir}/release/assets`,
+                dest: isWatch ? `${rootBuildDir}${path.sep}debug${path.sep}assets` : `${rootBuildDir}${path.sep}release${path.sep}assets`,
                 dereference: true,
                 errorOnExist: false,
                 preserveTimestamps: true,
@@ -57,7 +85,7 @@ async function frontFire( isWatch )
         await ctx.watch();
         let { host, port } = await ctx.serve(
             {
-                servedir : `./${rootBuildDir}/debug`
+                servedir : `.${path.sep}${rootBuildDir}${path.sep}debug`
             }
         );
 
