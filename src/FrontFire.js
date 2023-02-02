@@ -74,7 +74,7 @@ async function frontFire( isWatch )
     if ( true === isWatch )
     {
         opts[ "banner" ] = {
-            js: "(() => { (new EventSource(\"/esbuild\")).addEventListener('change', () => location.reload()); })();"
+            js: "(() => { (new EventSource(\"/esbuild\")).addEventListener('change', () => location.reload() ); })();"
         };
     }
 
@@ -82,12 +82,30 @@ async function frontFire( isWatch )
 
     if ( true === isWatch )
     {
+        console.log( "Adding additional watcher..." );
+        fs.watchFile( `src${path.sep}index.html`, async ( curr, prev ) =>
+        {
+            console.log( "Index.html changed..." );
+            const result = await ctx.rebuild();
+            console.log( result );
+        });
         await ctx.watch();
         let { host, port } = await ctx.serve(
             {
                 servedir : `.${path.sep}${rootBuildDir}${path.sep}debug`
             }
         );
+
+
+        let sseResponse = null;
+        /*
+        // DOES NOT WORK
+        setInterval( () =>
+        {
+            console.log( "Sending sse..." );
+            sseResponse.write( 'data: esbuild' );
+        }, 5000 );
+         */
 
         // Then start a proxy server on port 3000
         http.createServer((req, res) => {
@@ -99,6 +117,7 @@ async function frontFire( isWatch )
                 method: req.method,
                 headers: req.headers,
             }
+
 
             // Check if path is a valid state route
             // then pass it as "index.html" to the server
@@ -115,8 +134,13 @@ async function frontFire( isWatch )
                 // Otherwise, forward the response from esbuild to the client
                 res.writeHead(proxyRes.statusCode, proxyRes.headers)
 
+                if ( req.url === '/esbuild' )
+                {
+                    sseResponse = res;
+                }
+
                 proxyRes.pipe(res, { end: true })
-            })
+            });
 
             // Forward the body of the request to esbuild
             req.pipe(proxyReq, { end: true })
