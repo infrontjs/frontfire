@@ -1,8 +1,9 @@
 {
   "name": "frontfire",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
     "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -22,9 +23,12 @@
     "chalk": "^5.2.0",
     "commander": "^10.0.0",
     "conf": "^11.0.1",
-    "esbuild": "^0.17.4",
+    "esbuild": "^0.17.8",
     "esbuild-copy-static-files": "^0.1.0",
-    "esbuild-plugin-copy": "^2.0.2"
+    "esbuild-plugin-copy": "^2.0.2",
+    "lodash": "^4.17.21",
+    "php-server": "^1.0.0",
+    "prettier": "^2.8.4"
   },
   "bin": {
     "frontfire": "src/index.js"

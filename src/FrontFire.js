@@ -1,93 +1,59 @@
-const esbuild = require( "esbuild" );
-const { copy } = require( "esbuild-plugin-copy" );
-const copyStaticFiles = require( "esbuild-copy-static-files" );
-const http = require( "node:http" );
-const fs = require( 'node:fs' );
-const path = require( 'node:path' );
+import _ from "lodash";
+import esbuild from "esbuild";
+import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
+import * as child from "child_process";
 
-const rootBuildDir = 'build';
+import DEFAULT_CONFIG from "./DefaultConfig.js";
 
-try
+export default async function frontFire( isWatch, cfg = {} )
 {
-    if ( fs.statSync( rootBuildDir ) )
+    const config = _.merge( DEFAULT_CONFIG, cfg );
+
+    const indexType = _.get( config, 'debug.server.indexType', 'html' );
+
+    const rootBuildDir = _.get( config, 'buildDir', null );
+    if ( null === rootBuildDir )
     {
-        console.log( "Cleaning build directory: " + rootBuildDir );
-        fs.rmSync( rootBuildDir, { recursive: true, force: true } );
-    }
-}
-catch( ie )
-{
-    // Fail silently
-    console.error( ie );
-}
-
-const rootFiles = fs.readdirSync( `src${path.sep}`, { withFileTypes : true } );
-const rootFilesToCopy = [];
-for ( let ri = 0; ri < rootFiles.length; ri++ )
-{
-    if ( rootFiles[ ri ].isDirectory() )
-    {
-        continue;
+        throw new Error( 'No valid buildDir.' );
     }
 
-    // Note
-    // It seems that the copy plugin requires normal slashes no matter what OS we are on
-    rootFilesToCopy.push( `src/` + rootFiles[ ri ].name );
-}
+    try
+    {
+        let dirToDelete = isWatch ? 'debug' : 'release';
+        dirToDelete = `${rootBuildDir}${path.sep}${dirToDelete}`;
 
-async function frontFire( isWatch )
-{
-    let opts = {
-        // esbuild options
-        bundle: true,
-        sourcemap: true,
-        minify: isWatch ? false : true,
-        logLevel: isWatch ? "info" : "error",
-        entryPoints : [ `src${path.sep}app${path.sep}main.js`, `src${path.sep}app${path.sep}app.css` ],
-        outdir : isWatch ? `${rootBuildDir}${path.sep}debug${path.sep}app${path.sep}` : `${rootBuildDir}${path.sep}release${path.sep}app${path.sep}`,
-        loader: {
-            ".html" : "text",
-            ".png" : "file"
-        },
-        plugins: [
-            copy({
-                resolveFrom : 'cwd',
-                assets: [
-                    {
-                        from: rootFilesToCopy,
-                        to: [ isWatch ? `${rootBuildDir}${path.sep}debug` : `${rootBuildDir}${path.sep}release` ]
-                    }
-                ]
-            }),
-            copyStaticFiles({
-                src: 'src/assets',
-                dest: isWatch ? `${rootBuildDir}${path.sep}debug${path.sep}assets` : `${rootBuildDir}${path.sep}release${path.sep}assets`,
-                dereference: true,
-                errorOnExist: false,
-                preserveTimestamps: true,
-                recursive: true
-            })
-        ]
+        if ( fs.statSync( dirToDelete ) )
+        {
+            console.log( "Cleaning build directory: " + dirToDelete );
+            fs.rmSync( dirToDelete, { recursive: true, force: true } );
+        }
+    }
+    catch( ie )
+    {
+        // Fail silently
+        console.error( ie );
+    }
 
-    };
+    let esbuildOpts = null;
 
     if ( true === isWatch )
     {
-        opts[ "banner" ] = {
-            js: "(() => { (new EventSource(\"/esbuild\")).addEventListener('change', () => location.reload() ); })();"
-        };
+        esbuildOpts = _.get( config, 'debug.esbuild' );
+    }
+    else
+    {
+        esbuildOpts = _.get( config, 'release.esbuild' );
     }
 
-    let ctx = await esbuild.context( opts );
+    let ctx = await esbuild.context( esbuildOpts );
 
     if ( true === isWatch )
     {
-        console.log( "Adding additional watcher..." );
         fs.watchFile( `src${path.sep}index.html`, async ( curr, prev ) =>
         {
-            console.log( "Index.html changed..." );
             const result = await ctx.rebuild();
-            console.log( result );
         });
         await ctx.watch();
         let { host, port } = await ctx.serve(
@@ -95,17 +61,6 @@ async function frontFire( isWatch )
                 servedir : `.${path.sep}${rootBuildDir}${path.sep}debug`
             }
         );
-
-
-        let sseResponse = null;
-        /*
-        // DOES NOT WORK
-        setInterval( () =>
-        {
-            console.log( "Sending sse..." );
-            sseResponse.write( 'data: esbuild' );
-        }, 5000 );
-         */
 
         // Then start a proxy server on port 3000
         http.createServer((req, res) => {
@@ -116,8 +71,15 @@ async function frontFire( isWatch )
                 path: req.url,
                 method: req.method,
                 headers: req.headers,
-            }
+            };
 
+            if ( 'php' === indexType && req.url === "/" && req.method.toLowerCase() === 'get' )
+            {
+                const indexHtml = child.execSync( `php src${path.sep}index.php`);
+                res.writeHead( 200, { 'Content-Type': 'text/html' });
+                res.end( indexHtml.toString() );
+                return;
+            }
 
             // Check if path is a valid state route
             // then pass it as "index.html" to the server
@@ -127,17 +89,12 @@ async function frontFire( isWatch )
                 // If esbuild returns "not found", send a custom 404 page
                 if (proxyRes.statusCode === 404) {
                     res.writeHead(404, { 'Content-Type': 'text/html' })
-                    res.end('<h1>A custom 404 page</h1>')
-                    return
+                    res.end('<h1>A custom 404 page</h1>');
+                    return;
                 }
 
                 // Otherwise, forward the response from esbuild to the client
-                res.writeHead(proxyRes.statusCode, proxyRes.headers)
-
-                if ( req.url === '/esbuild' )
-                {
-                    sseResponse = res;
-                }
+                res.writeHead(proxyRes.statusCode, proxyRes.headers);
 
                 proxyRes.pipe(res, { end: true })
             });
@@ -154,6 +111,4 @@ async function frontFire( isWatch )
         await ctx.rebuild();
         ctx.dispose();
     }
-}
-
-module.exports = frontFire;
+};
