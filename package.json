@@ -1,6 +1,6 @@
 {
   "name": "frontfire",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "description": "",
   "main": "src/index.js",
   "type": "module",
@@ -23,7 +23,7 @@
     "chalk": "^5.2.0",
     "commander": "^10.0.0",
     "conf": "^11.0.1",
-    "esbuild": "^0.17.8",
+    "esbuild": "^0.19.5",
     "esbuild-copy-static-files": "^0.1.0",
     "esbuild-plugin-copy": "^2.0.2",
     "fs-extra": "^11.1.1",
