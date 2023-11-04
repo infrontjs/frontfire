@@ -21,26 +21,38 @@ for ( let ri = 0; ri < rootFiles.length; ri++ )
     rootFilesToCopy.push( `src/` + rootFiles[ ri ].name );
 }
 
-const buildDir = 'build';
+const buildDir = `build`;
 const entryPoints = [
-    "./src/app/main.js",
-    ".src/app/app.css"
+    /*
+    "src/app/main.js",
+    "src/app/app.css"
+     */
     /*
     path.resolve( './src/app/main.js' ),
     path.resolve( './src/app/app.css' )
      */
-    /*
     `.${path.sep}src${path.sep}app${path.sep}main.js`,
     `.${path.sep}src${path.sep}app${path.sep}app.css`
-     */
 ];
 
-const outDirDebug = `${buildDir}${path.sep}debug${path.sep}app${path.sep}`
-const outDirRelease = `${buildDir}${path.sep}release${path.sep}app${path.sep}`;
+const outDirDebug = `${buildDir}/debug/app/`
+const outDirRelease = `${buildDir}/release/app`;
 
-const staticAssetsDestDebug = `${buildDir}${path.sep}debug${path.sep}assets`;
-const staticAssetsDestRelease = `${buildDir}${path.sep}release${path.sep}assets`;
+console.log( outDirRelease );
 
+const staticAssetsDestDebug = `${buildDir}/debug/assets`;
+const staticAssetsDestRelease = `${buildDir}/release/assets`;
+
+/*
+console.log( "Build folder:" );
+console.log( buildDir );
+
+
+console.log( "Release folder:" );
+console.log( outDirRelease );
+
+console.log( "First entry point", entryPoints[ 0 ] );
+*/
 export default {
   "buildDir" : buildDir,
   "debug" : {
@@ -68,12 +80,12 @@ export default {
                   assets: [
                       {
                           from: rootFilesToCopy,
-                          to: [`${buildDir}${path.sep}debug` ]
+                          to: [`${buildDir}/debug` ]
                       }
                   ]
               }),
               copyStaticFiles({
-                  src: 'src/assets',
+                  src: `src/assets`,
                   dest: staticAssetsDestDebug,
                   dereference: true,
                   errorOnExist: false,
@@ -101,12 +113,12 @@ export default {
                   assets: [
                       {
                           from: rootFilesToCopy,
-                          to: [`${buildDir}${path.sep}release` ]
+                          to: [`${buildDir}/release` ]
                       }
                   ]
               }),
               copyStaticFiles({
-                  src: 'src/assets',
+                  src: `src/assets`,
                   dest: staticAssetsDestRelease,
                   dereference: true,
                   errorOnExist: false,

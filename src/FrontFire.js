@@ -20,6 +20,10 @@ export default async function frontFire( isWatch, cfg = {} )
         throw new Error( 'No valid buildDir.' );
     }
 
+
+    console.log( "Using root build dir:" )
+    console.log( rootBuildDir );
+
     fse.ensureDirSync( rootBuildDir );
     fse.ensureDirSync( `${rootBuildDir}${path.sep}debug` );
     fse.ensureDirSync( `${rootBuildDir}${path.sep}release` );
@@ -51,6 +55,8 @@ export default async function frontFire( isWatch, cfg = {} )
     {
         esbuildOpts = _.get( config, 'release.esbuild' );
     }
+
+    console.log( esbuildOpts );
 
     let ctx = await esbuild.context( esbuildOpts );
 
