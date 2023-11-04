@@ -21,9 +21,6 @@ export default async function frontFire( isWatch, cfg = {} )
     }
 
 
-    console.log( "Using root build dir:" )
-    console.log( rootBuildDir );
-
     fse.ensureDirSync( rootBuildDir );
     fse.ensureDirSync( `${rootBuildDir}${path.sep}debug` );
     fse.ensureDirSync( `${rootBuildDir}${path.sep}release` );
@@ -35,7 +32,6 @@ export default async function frontFire( isWatch, cfg = {} )
 
         if ( fs.statSync( dirToDelete ) )
         {
-            console.log( "Cleaning build directory: " + dirToDelete );
             fs.rmSync( dirToDelete, { recursive: true, force: true } );
         }
     }
@@ -55,8 +51,6 @@ export default async function frontFire( isWatch, cfg = {} )
     {
         esbuildOpts = _.get( config, 'release.esbuild' );
     }
-
-    console.log( esbuildOpts );
 
     let ctx = await esbuild.context( esbuildOpts );
 
@@ -115,7 +109,7 @@ export default async function frontFire( isWatch, cfg = {} )
 
         }).listen(3000);
 
-        console.log( '> InfrontJS:http://localhost:3000' );
+        console.log( `> InfrontJS:http://localhost:${port}` );
     }
     else
     {
