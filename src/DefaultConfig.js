@@ -23,8 +23,8 @@ for ( let ri = 0; ri < rootFiles.length; ri++ )
 
 const buildDir = 'build';
 const entryPoints = [
-    `src${path.sep}app${path.sep}main.js`,
-    `src${path.sep}app${path.sep}app.css`
+    `.${path.sep}src${path.sep}app${path.sep}main.js`,
+    `.${path.sep}src${path.sep}app${path.sep}app.css`
 ];
 
 const outDirDebug = `${buildDir}${path.sep}debug${path.sep}app${path.sep}`
