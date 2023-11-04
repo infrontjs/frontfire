@@ -27,12 +27,14 @@ async function performInit()
             }
         )
     );
+
+
 }
 
 // Try to load custom config
 let customConfig = null;
 
-if ( fs.statSync( 'frontfire.json' ) )
+if ( fs.statSync( 'frontfire.json', { "throwIfNoEntry": false } ) )
 {
     customConfig = fs.readFileSync( 'frontfire.json' );
     if ( customConfig )

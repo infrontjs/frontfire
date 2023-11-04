@@ -2,6 +2,7 @@ import _ from "lodash";
 import esbuild from "esbuild";
 import http from "node:http";
 import fs from "node:fs";
+import fse from "fs-extra";
 import path from "node:path";
 import * as child from "child_process";
 
@@ -18,6 +19,10 @@ export default async function frontFire( isWatch, cfg = {} )
     {
         throw new Error( 'No valid buildDir.' );
     }
+
+    fse.ensureDirSync( rootBuildDir );
+    fse.ensureDirSync( `${rootBuildDir}${path.sep}debug` );
+    fse.ensureDirSync( `${rootBuildDir}${path.sep}release` );
 
     try
     {
