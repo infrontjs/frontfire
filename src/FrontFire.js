@@ -63,11 +63,14 @@ export default async function frontFire( isWatch, cfg = {} )
         await ctx.watch();
         let { host, port } = await ctx.serve(
             {
-                servedir : `.${path.sep}${rootBuildDir}${path.sep}debug`
+                servedir : `.${path.sep}${rootBuildDir}${path.sep}debug`,
+                // @todo use param for index.html
+                fallback : `.${path.sep}${rootBuildDir}${path.sep}debug${path.sep}index.html`
+                //onRequest : function (  ) {  console.log( "Hello" ); }
             }
         );
 
-        // Then start a proxy server on port 3000
+        // Then start a proxy server
         http.createServer((req, res) => {
 
             const options = {
@@ -75,7 +78,7 @@ export default async function frontFire( isWatch, cfg = {} )
                 port: port,
                 path: req.url,
                 method: req.method,
-                headers: req.headers,
+                headers: req.headers
             };
 
             if ( 'php' === indexType && req.url === "/" && req.method.toLowerCase() === 'get' )
