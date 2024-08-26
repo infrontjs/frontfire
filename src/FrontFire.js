@@ -6,6 +6,8 @@ import fse from "fs-extra";
 import path from "node:path";
 import * as child from "child_process";
 
+import { DateTime } from "luxon";
+
 import DEFAULT_CONFIG from "./DefaultConfig.js";
 
 export default async function frontFire( isWatch, cfg = {} )
@@ -118,5 +120,10 @@ export default async function frontFire( isWatch, cfg = {} )
     {
         await ctx.rebuild();
         ctx.dispose();
+
+        // CACHEBREAK
+        let indexContent = fs.readFileSync( `${rootBuildDir}${path.sep}release${path.sep}index.html`,  { encoding: 'utf8', flag: 'r' } );
+        const changedContent = indexContent.replace( /IFJSCACHEBREAK/g, (DateTime.now()).valueOf() );
+        fs.writeFileSync( `${rootBuildDir}${path.sep}release${path.sep}index.html`, changedContent );
     }
 };

@@ -6,8 +6,33 @@ import path from "node:path";
 import { copy } from "esbuild-plugin-copy";
 import copyStaticFiles from "esbuild-copy-static-files";
 
+let currentDir = path.dirname( '.' );
+let rootDir = null;
+const maxCount = 10;
+let currentCount = 0;
+while ( null === rootDir )
+{
+    if ( fs.existsSync( currentDir + path.sep + 'package.json' ) )
+    {
+        rootDir = currentDir;
+    }
+    else
+    {
+        currentDir += '/..';
+        currentCount++;
+        if ( currentCount > maxCount ) {
+            break;
+        }
+    }
+}
 
-const rootFiles = fs.readdirSync( `src${path.sep}`, { withFileTypes : true } );
+if ( rootDir === null )
+{
+    console.error( 'Too many recursions. Root directory not found.' );
+    exit;
+}
+
+const rootFiles = fs.readdirSync( `${rootDir}${path.sep}src${path.sep}`, { withFileTypes : true } );
 const rootFilesToCopy = [];
 for ( let ri = 0; ri < rootFiles.length; ri++ )
 {
@@ -25,20 +50,18 @@ const buildDir = `build`;
 const entryPoints = [
     /*
     "src/app/main.js",
-    "src/app/app.css"
+    "src/app/main.css"
      */
     /*
     path.resolve( './src/app/main.js' ),
-    path.resolve( './src/app/app.css' )
+    path.resolve( './src/app/main.css' )
      */
     `.${path.sep}src${path.sep}app${path.sep}main.js`,
-    `.${path.sep}src${path.sep}app${path.sep}app.css`
+    `.${path.sep}src${path.sep}app${path.sep}main.css`
 ];
 
 const outDirDebug = `${buildDir}/debug/app/`
 const outDirRelease = `${buildDir}/release/app`;
-
-console.log( outDirRelease );
 
 const staticAssetsDestDebug = `${buildDir}/debug/assets`;
 const staticAssetsDestRelease = `${buildDir}/release/assets`;

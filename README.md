@@ -10,7 +10,7 @@ Structure
 
 - src/assets/**/*
 - src/app/main.js
-- src/app/app.css
+- src/app/main.css
 - src/index.html
 
-Entrypoint for building is main.js and app.css
+Entrypoint for building is main.js and main.css
