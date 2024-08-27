@@ -44,10 +44,12 @@ export default async function frontFire( isWatch, cfg = {} )
     }
 
     let esbuildOpts = null;
+    let serverOpts = null;
 
     if ( true === isWatch )
     {
         esbuildOpts = _.get( config, 'debug.esbuild' );
+        serverOpts = _.get( config, 'debug.server' );
     }
     else
     {
@@ -58,6 +60,8 @@ export default async function frontFire( isWatch, cfg = {} )
 
     if ( true === isWatch )
     {
+        const outerPort = serverOpts && serverOpts.hasOwnProperty( 'port' ) ? +serverOpts.port : 3000;
+
         fs.watchFile( `src${path.sep}index.html`, async ( curr, prev ) =>
         {
             const result = await ctx.rebuild();
@@ -112,9 +116,9 @@ export default async function frontFire( isWatch, cfg = {} )
             // Forward the body of the request to esbuild
             req.pipe(proxyReq, { end: true })
 
-        }).listen(3000);
+        }).listen( outerPort );
 
-        console.log( `> InfrontJS:http://localhost:${port}` );
+        console.log( `> InfrontJS:http://localhost:${outerPort}` );
     }
     else
     {

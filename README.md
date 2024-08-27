@@ -6,7 +6,7 @@ It is entirely built upon the great esbuild ecosystem.
 
 ## Logic
 
-Structure
+Required structure of an InfrontJS project is as follows
 
 - src/assets/**/*
 - src/app/main.js
