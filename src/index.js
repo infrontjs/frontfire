@@ -1,6 +1,7 @@
 #! /usr/bin/env node
 
 import fs from "node:fs";
+import { readdir, readFile } from 'node:fs/promises';
 import ejs from "ejs";
 import chalk from "chalk";
 
@@ -17,6 +18,7 @@ import wcTemplate from "./templates/wc-template.html.js";
 import stateClass from "./templates/state-class.js";
 import stateTemplate from "./templates/state-template.html.js";
 import poIndex from "./templates/po-index.js";
+import dictTemplate from "./templates/dictionary.js";
 
 async function performInit()
 {
@@ -143,7 +145,7 @@ async function generatesWebComponent( name = null )
     wcName = name.replace(/[A-Z]/g, (match, offset) => (offset > 0 ? '-' : '') + match.toLowerCase());
     fileName = fileName.charAt(0).toLowerCase() + fileName.slice(1);
 
-    const srcFolder = path.resolve( '.' ) + path.sep + fileName;
+    const srcFolder = path.resolve( '.' ) + path.sep + wcName;
     if ( true === fs.existsSync( srcFolder ) )
     {
         console.error( `Folder "${srcFolder}" already exists!` );
@@ -156,11 +158,113 @@ async function generatesWebComponent( name = null )
         ejs.render( wcIndex, { wcName: wcName, className: className } )
     );
     fs.writeFileSync(
-        srcFolder + path.sep + 'template.js',
+        srcFolder + path.sep + 'template.html',
         ejs.render( wcTemplate, { wcName: wcName } )
     );
 
     console.log( chalk.green.bold( `Web component ${wcName} successfully created.` ) );
+}
+
+async function generateDictionary( pathToDictionary, options )
+{
+    const defaultLang = 'en';
+    const countryCodes = options.countrycodes.split( "," );
+    const defaultCountryCode = options.defaulcountrycode;
+    const rootFolder = path.resolve( options.rootpath );
+    const newDict = [];
+    const lKeys = [];
+    let currentDict = {};
+
+    const indexOfDefaultLang = countryCodes.indexOf( defaultLang );
+    if ( -1 < indexOfDefaultLang )
+    {
+        countryCodes.splice( indexOfDefaultLang, 1 );
+    }
+
+    try
+    {
+        if ( fs.existsSync( pathToDictionary ) )
+        {
+            let dictContent = fs.readFileSync( pathToDictionary, { encoding: 'utf8' } );
+            dictContent = dictContent.replace( "export default", "" );
+            dictContent = dictContent.trim();
+            dictContent = dictContent.replace( new RegExp(';$', 'gm'), "" );
+            try {
+                currentDict = JSON.parse( dictContent );
+            } catch( e ) {
+                console.error( `Cannot parse current dictionary.`, e );
+                currentDict = {};
+            }
+        }
+
+        const files = await readdir( rootFolder, { recursive : true } );
+        for ( let fi = 0; fi < files.length; fi++ )
+        {
+            const file = files[ fi ];
+            if ( false === fs.lstatSync( file ).isFile() )
+            {
+                continue;
+            }
+
+            const regex = /_lcs\(\s*?[\'|\"|\`](.+)[\'|\"|`]\s*?\)/gm;
+            if ( -1 < [ '.html', '.js' ].indexOf( ( '.' +  file.split( '.' ).pop() ) ) )
+            {
+                const str = await readFile( file, 'utf8' );
+
+                let m;
+                while ((m = regex.exec(str)) !== null) {
+
+                    // This is necessary to avoid infinite loops with zero-width matches
+                    if (m.index === regex.lastIndex) {
+                        regex.lastIndex++;
+                    }
+
+                    // The result can be accessed through the `m`-variable.
+                    m.forEach((match, groupIndex) => {
+
+                        if ( false === match.includes( '_lcs' ) )
+                        {
+                            if ( -1 === lKeys.indexOf( match ) )
+                            {
+                                lKeys.push( match );
+                                let newEntry = { "key" : match, trans : [] };
+                                if ( currentDict.hasOwnProperty( match ) && currentDict[ match ].hasOwnProperty( defaultCountryCode ) && currentDict[ match ][ defaultCountryCode ] !== null )
+                                {
+                                    newEntry.trans.push( { "cc" : defaultCountryCode, "val" : currentDict[ match ][ defaultCountryCode ] } );
+                                }
+                                else
+                                {
+                                    newEntry.trans.push( { "cc" : defaultCountryCode, "val" : match } );
+                                }
+
+                                for ( let ci = 0; ci < countryCodes.length; ci++ )
+                                {
+                                    if ( currentDict.hasOwnProperty( match ) && currentDict[ match ].hasOwnProperty( countryCodes[ ci ] ) && currentDict[ match ][ countryCodes[ ci ] ] !== null )
+                                    {
+                                        newEntry.trans.push( { "cc" : countryCodes[ ci ], "val" : currentDict[ match ][ countryCodes[ ci ] ] } );
+                                    }
+                                    else
+                                    {
+                                        newEntry.trans.push( { "cc" : countryCodes[ ci ], "val" : null } );
+                                    }
+                                }
+                                newDict.push( newEntry );
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        const newDictFileContent = ejs.render( dictTemplate, { newDict: newDict } );
+        fs.writeFileSync( pathToDictionary, newDictFileContent, { encoding: 'utf8' } );
+
+        console.log( chalk.green.bold( `Dictionary successfully created under ${pathToDictionary}. Total keys: ${newDict.length}.` ) );
+    }
+    catch( e )
+    {
+        console.error( e );
+    }
 }
 
 // Try to load custom config
@@ -203,6 +307,15 @@ program
     .argument( '<name>', 'Name of web component.' )
     .description( 'Generates a webcomponent with specific name.' )
     .action( function( name ) { generatesWebComponent( name ); } );
+
+program
+    .command( 'gd' )
+    .argument( '<pathToDictionary>', 'Path to dictionary file. If it exists, it gets overwritten.' )
+    .option( '-cc, --countrycodes <ccodes>', 'Comma seperated list of country codes.', 'en,de' )
+    .option( '-dcc, --defaulcountrycode <ccode>', 'Default country code', 'en' )
+    .option( '-rp, --rootpath <rootpath>', 'Root path to parse files for translations.', './' )
+    .description( 'Generates a dictionary file.' )
+    .action( function( pathToDictionary, options ) { generateDictionary( pathToDictionary, options ); } );
 
 program
     .command( 'gs' )

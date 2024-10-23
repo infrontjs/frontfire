@@ -29,4 +29,4 @@ export default '' +
 '    }\n' +
 '}\n' +
 '\n' +
-'customElements.define(<%= wcName %>, <%= className %> );'
+'customElements.define( "<%= wcName %>", <%= className %> );'

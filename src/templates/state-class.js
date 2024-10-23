@@ -1,6 +1,6 @@
-export default 'import { BaseState } from "infrontjs";\n' +
+export default 'import { State } from "infrontjs";\n' +
 'import template from \'./<%= stateName %>Template.html\';\n' +
-'export class <%= stateName %> extends BaseState\n' +
+'export class <%= stateName %>State extends State\n' +
 '{\n' +
 '    static ROUTE = "/<%= stateId %>";\n' +
 '    static ID = "<%= stateId %>";\n' +
