@@ -56,8 +56,8 @@ const entryPoints = [
     path.resolve( './src/app/main.js' ),
     path.resolve( './src/app/main.css' )
      */
-    `.${path.sep}src${path.sep}app${path.sep}main.js`,
-    `.${path.sep}src${path.sep}app${path.sep}main.css`
+    `./src/app/main.js`,
+    `./src/app/main.css`
 ];
 
 const outDirDebug = `${buildDir}/debug/app/`
@@ -66,16 +66,6 @@ const outDirRelease = `${buildDir}/release/app`;
 const staticAssetsDestDebug = `${buildDir}/debug/assets`;
 const staticAssetsDestRelease = `${buildDir}/release/assets`;
 
-/*
-console.log( "Build folder:" );
-console.log( buildDir );
-
-
-console.log( "Release folder:" );
-console.log( outDirRelease );
-
-console.log( "First entry point", entryPoints[ 0 ] );
-*/
 export default {
   "buildDir" : buildDir,
   "debug" : {

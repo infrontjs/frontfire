@@ -38,6 +38,11 @@ async function performInit()
             }
         )
     );
+
+    if ( false === fs.existsSync( './src/assets' ) )
+    {
+        fs.mkdirSync( './src/assets' );
+    }
 }
 
 async function createInfrontJsStarter( appName = null )
