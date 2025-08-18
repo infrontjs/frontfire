@@ -48,14 +48,6 @@ for ( let ri = 0; ri < rootFiles.length; ri++ )
 
 const buildDir = `build`;
 const entryPoints = [
-    /*
-    "src/app/main.js",
-    "src/app/main.css"
-     */
-    /*
-    path.resolve( './src/app/main.js' ),
-    path.resolve( './src/app/main.css' )
-     */
     `./src/app/main.js`,
     `./src/app/main.css`
 ];
@@ -139,7 +131,6 @@ export default {
                   recursive: true
               })
           ]
-
       }
   }
 };

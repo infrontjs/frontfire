@@ -6,6 +6,8 @@ import ejs from "ejs";
 import chalk from "chalk";
 import download from "download-git-repo";
 import { promisify } from "util";
+import { exec } from "child_process";
+import pkg from "./../package.json" with { type: "json" };
 
 import _ from "lodash";
 import prettier from "prettier";
@@ -36,6 +38,8 @@ async function askYesNo(question) {
 
 async function performInit()
 {
+    const { default: defaultConfig } = await import("./DefaultConfig.js" );
+
     // Deep Copy
     const initConfig = JSON.parse( JSON.stringify( defaultConfig ) );
 
@@ -67,7 +71,6 @@ async function createInfrontJsStarter( appName, appPath )
     async function downloadRepo(repo, targetDir) {
         try {
             await downloadAsync(repo, targetDir, { clone: false });
-            console.log(`✅ Repo erfolgreich geladen nach ${targetDir}`);
         } catch (err) {
             console.error("❌ Fehler beim Laden des Repos:", err);
         }
@@ -86,7 +89,6 @@ async function createInfrontJsStarter( appName, appPath )
           pkg.name = newName;
 
           await writeFile(fullPath, JSON.stringify(pkg, null, 2) + "\n", "utf-8");
-          console.log(`✅ Updated package.json name to "${newName}"`);
         } else {
           console.log(`ℹ️ package.json name is not "infrontjs-starter" (found "${pkg.name}"), no change made.`);
         }
@@ -96,17 +98,22 @@ async function createInfrontJsStarter( appName, appPath )
     }
 
 
-  // Deep Copy
+    // Deep Copy
+    /*
     const initConfig = JSON.parse( JSON.stringify( defaultConfig ) );
 
     _.unset( initConfig, 'debug.esbuild.plugins' );
     _.unset( initConfig, 'release.esbuild.plugins' );
+     */
 
     await downloadRepo("github:infrontjs/starter", appPath );
     await updatePackageName( appName, `${appPath}/package.json` );
     await unlink( `${appPath}/LICENSE` );
 
-    await writeFile( `${appPath}/frontfire.json`, JSON.stringify(initConfig, null, 2) + "\n", "utf8");
+    const execAsync = promisify(exec);
+    await execAsync( "frontfire init", { cwd: appPath } );
+
+    //await writeFile( `${appPath}/frontfire.json`, JSON.stringify(initConfig, null, 2) + "\n", "utf8");
 
     console.log(chalk.green.bold(`\nInfrontJS project "${appName}" successfully created at ${appPath}\n`));
 
@@ -186,15 +193,9 @@ async function generatesWebComponent( name = null )
     let className = null;
     let wcName = null;
 
-    // Deep Copy
-    const initConfig = JSON.parse( JSON.stringify( defaultConfig ) );
-
-    _.unset( initConfig, 'debug.esbuild.plugins' );
-    _.unset( initConfig, 'release.esbuild.plugins' );
-
     if ( null === name || name.length === 0 )
     {
-        console.error( 'V')
+        console.error( 'Empty web component name.')
     }
 
     fileName = name.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
@@ -363,7 +364,7 @@ program
       const finalName = appName ?? "InfrontJS Starter";
       if ( !appPath )
       {
-          appPath = processY.cwd();
+          appPath = process.cwd();
           appPath = path.join( appPath, slugify( finalName,  { lower: true , strict: true } ) );
       }
 
@@ -424,7 +425,7 @@ program
 program
   .command( 'version' )
   .description( 'Prints the version number.' )
-  .action( function() { console.log( '0.8.0' ); } );
+  .action( function() { console.log( pkg.version ); } );
 
 
 program.parse();
