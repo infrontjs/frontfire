@@ -18,7 +18,6 @@ import { stdin as input, stdout as output } from "node:process";
 import slugify from "slugify";
 
 import frontFire from "./FrontFire.js";
-import defaultConfig from "./DefaultConfig.js";
 
 import wcIndex from "./templates/wc-index.js";
 import wcTemplate from "./templates/wc-template.html.js";
