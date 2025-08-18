@@ -1,14 +1,19 @@
 #! /usr/bin/env node
 
 import fs from "node:fs";
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile, unlink } from 'node:fs/promises';
 import ejs from "ejs";
 import chalk from "chalk";
+import download from "download-git-repo";
+import { promisify } from "util";
 
 import _ from "lodash";
 import prettier from "prettier";
 import { program } from "commander";
 import path from "node:path";
+import { createInterface } from "readline";
+import { stdin as input, stdout as output } from "node:process";
+import slugify from "slugify";
 
 import frontFire from "./FrontFire.js";
 import defaultConfig from "./DefaultConfig.js";
@@ -19,6 +24,15 @@ import stateClass from "./templates/state-class.js";
 import stateTemplate from "./templates/state-template.html.js";
 import poIndex from "./templates/po-index.js";
 import dictTemplate from "./templates/dictionary.js";
+
+async function askYesNo(question) {
+  const rl = createInterface({ input, output });
+  const answer = await new Promise((resolve) => {
+    rl.question(question, (ans) => resolve(ans.trim()));
+  });
+  rl.close();
+  return /^(y|yes)$/i.test(answer);
+}
 
 async function performInit()
 {
@@ -45,26 +59,64 @@ async function performInit()
     }
 }
 
-async function createInfrontJsStarter( appName = null )
+async function createInfrontJsStarter( appName, appPath )
 {
-    // Deep Copy
+    // Callback → Promise
+    const downloadAsync = promisify(download);
+
+    async function downloadRepo(repo, targetDir) {
+        try {
+            await downloadAsync(repo, targetDir, { clone: false });
+            console.log(`✅ Repo erfolgreich geladen nach ${targetDir}`);
+        } catch (err) {
+            console.error("❌ Fehler beim Laden des Repos:", err);
+        }
+    }
+
+    async function updatePackageName(newName, packagePath = "./package.json") {
+      try {
+        const fullPath = path.resolve(packagePath);
+
+        // read package.json
+        const data = await readFile(fullPath, "utf-8");
+        const pkg = JSON.parse(data);
+
+        // replace if it matches the source name
+        if (pkg.name === "infrontjs-starter") {
+          pkg.name = newName;
+
+          await writeFile(fullPath, JSON.stringify(pkg, null, 2) + "\n", "utf-8");
+          console.log(`✅ Updated package.json name to "${newName}"`);
+        } else {
+          console.log(`ℹ️ package.json name is not "infrontjs-starter" (found "${pkg.name}"), no change made.`);
+        }
+      } catch (err) {
+        console.error("❌ Failed to update package.json:", err);
+      }
+    }
+
+
+  // Deep Copy
     const initConfig = JSON.parse( JSON.stringify( defaultConfig ) );
 
     _.unset( initConfig, 'debug.esbuild.plugins' );
     _.unset( initConfig, 'release.esbuild.plugins' );
 
-    if ( null === appName || appName.length === 0 )
-    {
-        appName = 'InfrontJS Starter';
-    }
+    await downloadRepo("github:infrontjs/starter", appPath );
+    await updatePackageName( appName, `${appPath}/package.json` );
+    await unlink( `${appPath}/LICENSE` );
 
-    const srcFolder = path.resolve( '.' ) + path.separator + 'src-to-test';
+    await writeFile( `${appPath}/frontfire.json`, JSON.stringify(initConfig, null, 2) + "\n", "utf8");
 
-    if ( true === fs.existsSync( srcFolder ) )
-    {
-        console.warn( `Sourcefolder ${srcFolder} already exists!` );
-        return;
-    }
+    console.log(chalk.green.bold(`\nInfrontJS project "${appName}" successfully created at ${appPath}\n`));
+
+    console.log(chalk.cyan.bold("Next steps:"));
+    console.log(`  ${chalk.yellow("1.")} Change directory to ${chalk.magenta(path.resolve(appPath))}`);
+    console.log(`  ${chalk.yellow("2.")} Modify ${chalk.magenta(path.join(appPath, "frontfire.config"))} and ${chalk.magenta(path.join(appPath, "package.json"))} to your needs`);
+    console.log(`  ${chalk.yellow("3.")} Run ${chalk.blueBright("npm install")}`);
+    console.log(`  ${chalk.yellow("4.")} Run ${chalk.blueBright("frontfire start-dev")} to start development`);
+    console.log(`  ${chalk.yellow("5.")} Alternatively run ${chalk.blueBright("frontfire build")} to build your minified project before deployment\n`);
+
 }
 
 async function generatesPathObject( name )
@@ -125,7 +177,7 @@ async function generatesState( name, options )
 
     console.log( chalk.green.bold( `State ${stateName} successfully generated.`) );
     console.log( chalk.italic( 'Dont forget to add the state to your states instance, e.g.' ) );
-    console.log( chalk.italic.bgWhite( `myApp.states.add( ${stateName} );`) );
+    console.log( chalk.italic.bgWhite( `myApp.states.add( ${stateName}State);`) );
 }
 
 async function generatesWebComponent( name = null )
@@ -303,9 +355,38 @@ program
     .action( function() { performInit(); } );
 
 program
-    .command( 'create' )
-    .description( 'Creates starter InfrontJS application.' )
-    .action( function() { createInfrontJsStarter(); } );
+    .command("create")
+    .description("Create a new InfrontJS project")
+    .argument("[appName]", "Application name", "InfrontJS Starter")
+    .argument("[appPath]", "Target directory")
+    .action(async ( appName, appPath) => {
+      const finalName = appName ?? "InfrontJS Starter";
+      if ( !appPath )
+      {
+          appPath = processY.cwd();
+          appPath = path.join( appPath, slugify( finalName,  { lower: true , strict: true } ) );
+      }
+
+      const resolvedPath = path.resolve(appPath ?? process.cwd());
+
+      console.log(chalk.cyan(`\nAbout to create:`));
+      console.log(`  ${chalk.bold("Name:")} ${finalName}`);
+      console.log(`  ${chalk.bold("Path:")} ${resolvedPath}\n`);
+
+      const confirmed = await askYesNo(
+        chalk.yellow("Do you really want to create the project in this directory? (y/N) ")
+      );
+
+      if (!confirmed) {
+        console.log(chalk.red("Aborted."));
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log(chalk.green("Starting..."));
+      await createInfrontJsStarter( finalName, resolvedPath );
+      console.log(chalk.green("Done."));
+    });
 
 program
     .command( 'gwc' )
@@ -339,6 +420,11 @@ program
     .command( 'build' )
     .description( 'Building for production.' )
     .action( function() { frontFire( false, customConfig ); } );
+
+program
+  .command( 'version' )
+  .description( 'Prints the version number.' )
+  .action( function() { console.log( '0.8.0' ); } );
 
 
 program.parse();

@@ -127,7 +127,7 @@ export default async function frontFire( isWatch, cfg = {} )
 
         // CACHEBREAK
         let indexContent = fs.readFileSync( `${rootBuildDir}${path.sep}release${path.sep}index.html`,  { encoding: 'utf8', flag: 'r' } );
-        const changedContent = indexContent.replace( /IFJSCACHEBREAK/g, (DateTime.now()).valueOf() );
+        const changedContent = indexContent.replace( /INFRONTCACHEBREAK/g, (DateTime.now()).valueOf() );
         fs.writeFileSync( `${rootBuildDir}${path.sep}release${path.sep}index.html`, changedContent );
     }
 };
