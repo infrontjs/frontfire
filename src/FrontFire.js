@@ -122,7 +122,7 @@ export default async function frontFire( isWatch, cfg = {} )
     }
     else
     {
-        fse.copySync( 'src', `${rootBuildDir}${path.sep}release` );
+        fse.copySync( `src${path.sep}index.html`, `${rootBuildDir}${path.sep}release${path.sep}index.html` );
         await ctx.rebuild();
         ctx.dispose();
 
