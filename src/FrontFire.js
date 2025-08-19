@@ -61,7 +61,7 @@ export default async function frontFire( isWatch, cfg = {} )
     if ( true === isWatch )
     {
         const outerPort = serverOpts && serverOpts.hasOwnProperty( 'port' ) ? +serverOpts.port : 3000;
-
+        fse.copySync( 'src', `${rootBuildDir}${path.sep}debug` );
         fs.watchFile( `src${path.sep}index.html`, async ( curr, prev ) =>
         {
             const result = await ctx.rebuild();
@@ -122,6 +122,7 @@ export default async function frontFire( isWatch, cfg = {} )
     }
     else
     {
+        fse.copySync( 'src', `${rootBuildDir}${path.sep}release` );
         await ctx.rebuild();
         ctx.dispose();
 
