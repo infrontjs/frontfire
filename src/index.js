@@ -345,7 +345,7 @@ if ( fs.statSync( 'frontfire.json', { "throwIfNoEntry": false } ) )
 }
 
 program
-    .command( 'run-dev' )
+    .command( 'start-dev' )
     .description( 'Running development server.' )
     .action( function() { frontFire( true, customConfig ); } );
 

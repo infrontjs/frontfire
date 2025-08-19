@@ -1,3 +1,4 @@
+/*
 // Core
 import fs from "node:fs";
 import path from "node:path";
@@ -57,80 +58,33 @@ const outDirRelease = `${buildDir}/release/app`;
 
 const staticAssetsDestDebug = `${buildDir}/debug/assets`;
 const staticAssetsDestRelease = `${buildDir}/release/assets`;
-
+*/
 export default {
-  "buildDir" : buildDir,
-  "debug" : {
-      "server" : {
-          "indexType" : "html",
-          "port" : 3000
-      },
-      "esbuild" : {
-          bundle: true,
-          sourcemap: true,
-          minify: false,
-          logLevel: "info",
-          entryPoints : entryPoints,
-          outdir : outDirDebug,
-          loader: {
-              ".html" : "text",
-              ".png" : "file"
-          },
-          banner : {
-              js: "(() => { (new EventSource(\"/esbuild\")).addEventListener('change', () => location.reload() ); })();"
-          },
-          plugins: [
-              copy({
-                  resolveFrom : 'cwd',
-                  assets: [
-                      {
-                          from: rootFilesToCopy,
-                          to: [`${buildDir}/debug` ]
-                      }
-                  ]
-              }),
-              copyStaticFiles({
-                  src: `src/assets`,
-                  dest: staticAssetsDestDebug,
-                  dereference: true,
-                  errorOnExist: false,
-                  preserveTimestamps: true,
-                  recursive: true
-              })
-          ]
-      },
-  },
-  "release" : {
-      "esbuild" : {
-          bundle: true,
-          sourcemap: true,
-          minify: true,
-          logLevel: "error",
-          entryPoints : entryPoints,
-          outdir : outDirRelease,
-          loader: {
-              ".html" : "text",
-              ".png" : "file"
-          },
-          plugins: [
-              copy({
-                  resolveFrom : 'cwd',
-                  assets: [
-                      {
-                          from: rootFilesToCopy,
-                          to: [`${buildDir}/release` ]
-                      }
-                  ]
-              }),
-              copyStaticFiles({
-                  src: `src/assets`,
-                  dest: staticAssetsDestRelease,
-                  dereference: true,
-                  errorOnExist: false,
-                  preserveTimestamps: true,
-                  recursive: true
-              })
-          ]
+  "buildDir": "build",
+  "debug": {
+    "server": { "indexType": "html", "port": 3000 },
+    "esbuild": {
+      "bundle": true,
+      "sourcemap": true,
+      "minify": false,
+      "logLevel": "info",
+      "entryPoints": [".\\src\\app\\main.js", ".\\src\\app\\main.css"],
+      "outdir": "build/debug/app/",
+      "loader": { ".html": "text", ".png": "file" },
+      "banner": {
+        "js": "(() => { (new EventSource(\"/esbuild\")).addEventListener('change', () => location.reload() ); })();"
       }
+    }
+  },
+  "release": {
+    "esbuild": {
+      "bundle": true,
+      "sourcemap": true,
+      "minify": true,
+      "logLevel": "error",
+      "entryPoints": [".\\src\\app\\main.js", ".\\src\\app\\main.css"],
+      "outdir": "build/release/app",
+      "loader": { ".html": "text", ".png": "file" }
+    }
   }
 };
